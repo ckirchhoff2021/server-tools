@@ -47,7 +47,20 @@ class ServerState:
 
 
 def _normalize_context(raw: list[float] | list[list[float]]) -> np.ndarray:
-    array = np.asarray(raw, dtype=np.float32)
+    if isinstance(raw, list) and raw and isinstance(raw[0], list):
+        lengths = {len(variate) for variate in raw}
+        if len(lengths) != 1:
+            raise HTTPException(
+                status_code=400,
+                detail="all variates must have the same length",
+            )
+    try:
+        array = np.asarray(raw, dtype=np.float32)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="context must be 1D or 2D numeric array",
+        ) from exc
     if array.ndim not in (1, 2):
         raise HTTPException(status_code=400, detail="context must be 1D or 2D numeric array")
     if array.shape[-1] < 32:
